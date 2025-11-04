@@ -22,7 +22,7 @@ def train_YOLO_model():
     wandb.init(project="RedBullDetector", entity="tom-davies")
 
     # Define data and pretrained model paths
-    data_path = "data/red_bull_data.yaml"
+    data_path = "Dataset/data.yaml"
     pretrained_model_path = "yolov8n.pt"
     
     # Load model
