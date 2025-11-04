@@ -15,11 +15,27 @@ import os
 import wandb
 
 ###############################################
+# HYPERPARAMETERS
+###############################################
+
+EPOCHS = 300
+BATCH = 16
+IMAGE_SIZE = 640
+
+###############################################
 # Training function
 ###############################################
 def train_YOLO_model():
     # Initialise wandb
-    wandb.init(project="RedBullDetector", entity="tom-davies")
+    wandb.init(
+        project="Red-Bull-Detector", 
+        entity="thomas-gilmour-davies-curtin-university",
+        config={
+            "epochs": EPOCHS,
+            "batch": BATCH,
+            "image_size": IMAGE_SIZE
+        }
+    )
 
     # Define data and pretrained model paths
     data_path = "Dataset/data.yaml"
@@ -31,15 +47,14 @@ def train_YOLO_model():
     # Train model
     model.train(
         data=data_path,
-        epochs=300,
-        imgsz=960,
-        batch=16,
+        epochs=EPOCHS,
+        imgsz=IMAGE_SIZE,
+        batch=BATCH,
         name="red_bull_yolo_model",
         patience=10,
         device=0,
         save=True,
         project="runs/train",
-        logger="wandb"
     )
 
     # Save model

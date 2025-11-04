@@ -3,3 +3,6 @@
 
 # Dataset
 /Dataset/
+
+# Wandb
+/wandb/
