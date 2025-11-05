@@ -15,6 +15,39 @@ import ultralytics
 import cv2
 import os
 
+
+###############################################
+# FUCNTION TO CREATE CLIPS GIVE START AND END FRAMES
+###############################################
+def create_clip(start_frame, end_frame, video_path, file_name, output_file_path):
+
+    # Create output path
+    clip_name = "clip_{}_{}_{}.mp4".format(file_name, start_frame, end_frame)
+    output_path = os.path.join(output_file_path, clip_name)
+
+    # Read frames from the original video
+    cap = cv2.VideoCapture(video_path)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+    frames_to_write = end_frame - start_frame + 1
+
+    # Create video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    # Write frames to new clip
+    while frames_to_write > 0:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        out.write(frame)
+        frames_to_write -= 1
+    
+    cap.release()
+    out.release()
+
 ###############################################
 # CONSTANTS
 ###############################################
@@ -35,10 +68,8 @@ parser.add_argument("--model_path", type=str, default="runs/train/red_bull_yolo_
 args = parser.parse_args()
 
 ###############################################
-# LOAD INPUT DATA
+# CREATE OUTPUT FOLDER
 ###############################################
-
-input_videos = []
 
 # Make the output folder
 if not os.path.exists(args.output_file_path):
@@ -67,17 +98,14 @@ for video_file in os.listdir(args.input_file_path):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
-    # Define output video writer
-    output_path = os.path.join(args.output_file_path, f"detected_{video_file}")
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
     # Used to limit fps
     mod = max(1, round(fps / TARGET_FPS))
 
 
     frame_count = 0
+    start_frame = 0
     consecutive = 0
+    clips = []
 
     ###############################################
     # LOOP THROUGH FRAMES
@@ -99,6 +127,12 @@ for video_file in os.listdir(args.input_file_path):
         boxes = results[0].boxes
 
         if boxes.shape[0] == 0:
+
+            # Add clip if minimum consecutive frames met
+            if consecutive >= MINIMUM_CONSECUTIVE:
+                end_frame = frame_count - 1
+                clips.append((start_frame, end_frame))
+
             consecutive = 0
             continue # Skip if no Red Bull cans detected
 
@@ -106,14 +140,14 @@ for video_file in os.listdir(args.input_file_path):
         # IF A RED BULL CAN IS DETECTED
         ###############################################
 
+        if consecutive == 0:
+            start_frame = frame_count
+
         consecutive += 1
 
-        if consecutive < MINIMUM_CONSECUTIVE:
-            continue # Require minimum number of consecutive freames with detection
-
-        annotated_frame = cv2.resize(results[0].plot(), (width, height))
-
-        out.write(annotated_frame)
+    
+    # Create clips from detected segments
+    for start, end in clips:
+        create_clip(start, end, video_path, video_file.split('.')[0], args.output_file_path)
 
     cap.release()
-    out.release()
