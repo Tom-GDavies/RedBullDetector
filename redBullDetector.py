@@ -52,8 +52,8 @@ def create_clip(start_frame, end_frame, video_path, file_name, output_file_path)
 # CONSTANTS
 ###############################################
 
-TARGET_FPS = 3  # Frames per second for processing
-MINIMUM_CONSECUTIVE = 3  # Minimum consecutive frames with detection to save
+TARGET_FPS = 10  # Frames per second for processing
+MINIMUM_CONSECUTIVE = 5  # Minimum consecutive frames with detection to save
 
 ###############################################
 # GET COMMAND LINE ARGUMENTS
@@ -131,7 +131,7 @@ for video_file in os.listdir(args.input_file_path):
             # Add clip if minimum consecutive frames met
             if consecutive >= MINIMUM_CONSECUTIVE:
                 end_frame = frame_count - 1
-                clips.append((start_frame, end_frame))
+                create_clip(start_frame, end_frame, video_path, video_file.split('.')[0], args.output_file_path)
 
             consecutive = 0
             continue # Skip if no Red Bull cans detected
@@ -144,10 +144,5 @@ for video_file in os.listdir(args.input_file_path):
             start_frame = frame_count
 
         consecutive += 1
-
-    
-    # Create clips from detected segments
-    for start, end in clips:
-        create_clip(start, end, video_path, video_file.split('.')[0], args.output_file_path)
 
     cap.release()
