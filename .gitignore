@@ -6,3 +6,7 @@
 
 # Wandb
 /wandb/
+
+# Test data
+/input/
+/output/
