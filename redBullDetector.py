@@ -54,6 +54,8 @@ def create_clip(start_frame, end_frame, video_path, file_name, output_file_path)
 
 TARGET_FPS = 10  # Frames per second for processing
 MINIMUM_CONSECUTIVE = 5  # Minimum consecutive frames with detection to save
+LEEWAY_FRAMES = 2 # Leeway given for missed Red Bull detections
+BORDER_FRAMES = 30 # Number of frames added before and after clip
 
 ###############################################
 # GET COMMAND LINE ARGUMENTS
@@ -105,6 +107,7 @@ for video_file in os.listdir(args.input_file_path):
     frame_count = 0
     start_frame = 0
     consecutive = 0
+    leeway = LEEWAY_FRAMES
     clips = []
 
     ###############################################
@@ -128,21 +131,29 @@ for video_file in os.listdir(args.input_file_path):
 
         if boxes.shape[0] == 0:
 
+            # Provides leeway for missed detections
+            if consecutive > 0:
+                if leeway > 0:
+                    leeway -= 1
+                    continue
+                
             # Add clip if minimum consecutive frames met
             if consecutive >= MINIMUM_CONSECUTIVE:
-                end_frame = frame_count - 1
-                create_clip(start_frame, end_frame, video_path, video_file.split('.')[0], args.output_file_path)
+                start = max(0, start_frame - BORDER_FRAMES)
+                end = min(frame_count + BORDER_FRAMES, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1)
+                create_clip(start, end, video_path, video_file.split('.')[0], args.output_file_path)
 
             consecutive = 0
-            continue # Skip if no Red Bull cans detected
+            leeway = LEEWAY_FRAMES
 
         ###############################################
         # IF A RED BULL CAN IS DETECTED
         ###############################################
+        else:
+            if consecutive == 0:
+                start_frame = frame_count
 
-        if consecutive == 0:
-            start_frame = frame_count
-
-        consecutive += 1
+            leeway = LEEWAY_FRAMES
+            consecutive += 1
 
     cap.release()
